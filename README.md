@@ -257,3 +257,84 @@ weather_loc 테이블은 기상청에서 주어지는
 -------------
 -  현재 날씨 부분에 세세한 주소까지 들어가지 않고 
 -  시단위로 구현했는데, 사용자의 위치를 읽어 시,구,동 단위의 날씨를 받아오고 싶다.
+  
+ 
+
+***
+기타(개발노트) _지우기 아까워서 
+-------------
+  
+<파일 업로드 이슈>  
+mvc model2  
+-request로 파라미터를 가져오는 것은 서블릿, 인터페이스, 클래스 모두 공유가 된다.  
+	(공유가 되야 커맨드가져와서 처리 클래스로 보내고 작업 처리)  
+-하지만 multipartrequest는 모두 공유가 안됨,  
+	따라서 커맨드 1번 가져올때 호출하고, 글 쓸 때 값 1번 호출 총 2번 호출해야함  
+-그치만 multipartrequest는 2번 호출하면   
+Corrupt form data: premature ending  에러가 뜬다.  
+- 에러뜨는 이유: 두번째 호출될때 request에 inputStream이 사라져서 발생함.  
+  
+- 글을 쓸때만 multipartrequest를  쓰면 해결방법이 있지만 글 수정떄도 multipartrequest를 필요  
+
+  
+해결방안  
+방법1. 글 쓸때만 multipartrequest 사용    
+- 한 번 업로드하면 사진 수정할 수x   
+- model2 형식 지킨다.  
+
+  
+방법2. mvc model2에서 글 쓰고,삭제만 커맨드 안받아오고 서블릿하나씩 만들어 직접 처리  
+- 사진 업로드,수정 모두 가능할 듯   
+- model2형식 깨진다.  
+  
+방법3. session을 이용해서 커맨드 받아주기!!  -> 채택  
+  
+
+
+<reply 이슈>  
+- 너무 힘들었다.  
+- 답글 구현 ㅇ   답글의 답글 x   
+- 답글의 답글 못쓰게 boardView.jsp 에서 EL과 JSTL로 막아놨다.  
+	(만약에 제목이 [Re]가 있으면 버튼 안보이게)  
+-DB에 추가한 칼럼들  
+ ref : 부모글 번호  (첫번쨰 정렬 기준 내림차순)  
+ indent: 원글과 답변글 구분하기위한 들여쓰기용 (하지만 여기선 없어도 됨)  
+ step : 같은 부모글에 여러개의 답글 달렸을 경우 순서를 정하기 위해 만듬  
+	board_seq.nextval을 값으로 넣음, 고유하게 1씩 증가하는(두번째 정렬 기준 오름차순)  
+	
+
+  
+
+<로그인과 게시판 합치기 이슈>  
+0. 로그인 후-> 메인, 게시판 접근 가능  
+  
+1. 세션 저장  
+//LoginServlet.java  
+MemberVO login_user_info = mDao.getMember(userid);  
+session.setAttribute("loginUser", login_user_info); 
+=> 로그인 멤버VO자체를 세션으로 저장  
+  
+2-1. jsp에서 세션 사용하기   
+<c:if test="${empty loginUser}">  
+	<jsp:forward page='login.do' />  
+</c:if>  
+=> 세션 없을 시 모든 페이지에서 login.do로 가게 만듦  
+  
+2-2. jsp에서 세션 사용하기   
+${loginUser.userid}   
+- JSP에서 EL로 세션 불러내어 사용  
+ 
+  
+3. boardWrite.jsp, boardReply.jsp 수정할것  
+- 작성자 => 세션에 저장된 아이디로 바꾸기  
+- 비밀번호 => 폼에서 없애기 ,db에도 없애기  
+- 이메일 => 세션에 저장된 유저의 이메일 적기  
+  
+4. boardView.jsp 수정할것  
+- 글 수정, 글 삭제 버튼 세션id와 글쓴이id가 같으면 보이게 아니면 안보이게  
+- 글 삭제 눌렀을때 패스워드 체크하는 로직 모두 삭제   
+  
+5. boardUpdate.jsp 수정할것  
+- 패스워드 삭제 -> action,dao 고치기  
+
+  
