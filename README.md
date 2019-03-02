@@ -68,7 +68,7 @@ create table board(
   num number(5) primary key,
   name varchar2(30),
   email varchar2(30),
-  title varchar2(50),
+  title varchar2(100),
   content varchar2(1000),
   readcount number(4) default 0,
   img varchar2(100),
